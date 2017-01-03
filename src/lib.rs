@@ -1,9 +1,24 @@
+extern crate getopts;
 extern crate ignore;
 
+use std::error::Error;
 use std::path::Path;
-use ignore::Walk;
+use ignore::WalkBuilder;
+use ignore::overrides::OverrideBuilder;
 
-pub fn run(start_paths: Vec<std::string::String>) {
+pub struct Config {
+    pub all: bool,
+}
+
+impl Config {
+    pub fn new(matches: &getopts::Matches) -> Config {
+        Config {
+            all: matches.opt_present("a"),
+        }
+    }
+}
+
+pub fn run(start_paths: Vec<std::string::String>, config: Config) -> Result<(), Box<Error>>{
     for path_string in start_paths {
         let exists;
         {
@@ -13,7 +28,18 @@ pub fn run(start_paths: Vec<std::string::String>) {
         if !exists {
             println!("{}: No such file or directory", path_string);
         } else {
-            for result in Walk::new(path_string) {
+            let mut builder = WalkBuilder::new(path_string);
+            if config.all {
+                builder.hidden(false);
+            };
+            // Overrides
+            if config.all {
+                let mut override_builder = OverrideBuilder::new("/");
+                override_builder.add(&"!.git/").unwrap();
+                builder.overrides(override_builder.build().unwrap());
+            }
+            let walker = builder.build();
+            for result in walker {
                 match result {
                     Ok(entry) => println!("{}", entry.path().display()),
                     Err(err) => println!("ERROR: {}", err),
@@ -21,5 +47,7 @@ pub fn run(start_paths: Vec<std::string::String>) {
             }
         }
     }
+
+    Ok(())
 }
 
