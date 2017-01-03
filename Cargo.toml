@@ -1,0 +1,8 @@
+[package]
+name = "dive"
+version = "0.1.0"
+authors = ["Steve Cook <dive@snarkout.org>"]
+
+[dependencies]
+getopts = "*"
+ignore = "0.1.6"
