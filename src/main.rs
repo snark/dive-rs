@@ -3,6 +3,7 @@ extern crate dive;
 extern crate getopts;
 
 use std::env;
+use std::path::Path;
 use std::process;
 use getopts::Options;
 
@@ -15,7 +16,10 @@ fn print_usage(program: &str, opts: Options) {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let program = args[0].clone();
+    let program = Path::new(&args[0])
+        .file_name()
+        .and_then(|o| o.to_str())
+        .unwrap();
 
     let mut opts = Options::new();
     opts.optflag("a", "all", "Show files whose names begin with a dot (.)");
@@ -31,6 +35,7 @@ fn main() {
         print_usage(&program, opts);
         return;
     }
+
     if matches.opt_present("V") {
         println!("{} version {}", program, VERSION.unwrap_or("unknown"));
         return;
