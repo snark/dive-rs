@@ -27,8 +27,8 @@ fn main() {
     opts.optflag("V", "version", "Print version info and exit");
 
     let matches = match opts.parse(&args[1..]) {
-        Ok(m) => { m }
-        Err(f) => { panic!(f.to_string()) }
+        Ok(m) => m,
+        Err(f) => panic!(f.to_string()),
     };
 
     if matches.opt_present("h") {
@@ -54,4 +54,3 @@ fn main() {
         process::exit(1);
     }
 }
-

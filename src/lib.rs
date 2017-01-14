@@ -12,13 +12,11 @@ pub struct Config {
 
 impl Config {
     pub fn new(matches: &getopts::Matches) -> Config {
-        Config {
-            all: matches.opt_present("a"),
-        }
+        Config { all: matches.opt_present("a") }
     }
 }
 
-pub fn run(start_paths: Vec<std::string::String>, config: Config) -> Result<(), Box<Error>>{
+pub fn run(start_paths: Vec<std::string::String>, config: Config) -> Result<(), Box<Error>> {
     for path_string in start_paths {
         let exists;
         {
@@ -50,4 +48,3 @@ pub fn run(start_paths: Vec<std::string::String>, config: Config) -> Result<(), 
 
     Ok(())
 }
-
