@@ -5,4 +5,5 @@ authors = ["Steve Cook <dive@snarkout.org>"]
 
 [dependencies]
 getopts = "*"
+glob = "0.2"
 ignore = "0.1.6"

@@ -22,13 +22,18 @@ fn main() {
         .unwrap();
 
     let mut opts = Options::new();
+    opts.optopt("n", "name", "Filter by file name", "PATTERN");
     opts.optflag("a", "all", "Show files whose names begin with a dot (.)");
     opts.optflag("h", "help", "Print this help menu");
     opts.optflag("V", "version", "Print version info and exit");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
-        Err(f) => panic!(f.to_string()),
+        Err(f) => {
+            println!("{}: {}\n", program, f.to_string());
+            print_usage(&program, opts);
+            process::exit(1);
+        }
     };
 
     if matches.opt_present("h") {

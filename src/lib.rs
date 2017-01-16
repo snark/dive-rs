@@ -1,19 +1,44 @@
 extern crate getopts;
+extern crate glob;
 extern crate ignore;
 
 use std::error::Error;
 use std::path::Path;
-use ignore::WalkBuilder;
+
+use glob::Pattern;
+use ignore::{WalkBuilder, DirEntry};
 use ignore::overrides::OverrideBuilder;
 
 pub struct Config {
     pub all: bool,
+    pub name: Option<Pattern>,
 }
 
 impl Config {
     pub fn new(matches: &getopts::Matches) -> Config {
-        Config { all: matches.opt_present("a") }
+        let name = match matches.opt_str("name") {
+            Some(g) => Pattern::new(&g).ok(),
+            _ => None,
+        };
+        Config {
+            all: matches.opt_present("all"),
+            name: name,
+        }
     }
+}
+
+fn handle_entry(entry: DirEntry, config: &Config) {
+    let ref config_name = config.name;
+    let m = match config_name.as_ref() {
+        Some(p) => {
+            let n = entry.file_name().to_str();
+            p.matches(n.unwrap())
+        }
+        None => true,
+    };
+    if m {
+        println!("{}", entry.path().display());
+    };
 }
 
 pub fn run(start_paths: Vec<std::string::String>, config: Config) -> Result<(), Box<Error>> {
@@ -37,10 +62,12 @@ pub fn run(start_paths: Vec<std::string::String>, config: Config) -> Result<(), 
                 builder.overrides(override_builder.build().unwrap());
             }
             let walker = builder.build();
+            // Currently errors are silently swallowed, but eventually we'll
+            // add reporting if a --verbose flag is on.
             for result in walker {
                 match result {
-                    Ok(entry) => println!("{}", entry.path().display()),
-                    Err(err) => println!("ERROR: {}", err),
+                    Ok(entry) => handle_entry(entry, &config),
+                    _ => (),
                 }
             }
         }
