@@ -5,12 +5,14 @@ extern crate ignore;
 use std::error::Error;
 use std::path::Path;
 
-use glob::Pattern;
+use glob::{Pattern, MatchOptions};
 use ignore::{WalkBuilder, DirEntry};
 use ignore::overrides::OverrideBuilder;
 
 pub struct Config {
     pub all: bool,
+    pub glob_options: MatchOptions,
+    pub case_sensitive: bool,
     pub name: Option<Pattern>,
 }
 
@@ -20,8 +22,16 @@ impl Config {
             Some(g) => Pattern::new(&g).ok(),
             _ => None,
         };
+        let case_sensitive = matches.opt_present("case-sensitive");
+        let glob_options = MatchOptions {
+            case_sensitive: case_sensitive,
+            require_literal_separator: false,
+            require_literal_leading_dot: false,
+        };
         Config {
             all: matches.opt_present("all"),
+            glob_options: glob_options,
+            case_sensitive: case_sensitive,
             name: name,
         }
     }
@@ -29,10 +39,11 @@ impl Config {
 
 fn handle_entry(entry: DirEntry, config: &Config) {
     let ref config_name = config.name;
+    let ref glob_options = config.glob_options;
     let m = match config_name.as_ref() {
         Some(p) => {
             let n = entry.file_name().to_str();
-            p.matches(n.unwrap())
+            p.matches_with(n.unwrap(), glob_options)
         }
         None => true,
     };

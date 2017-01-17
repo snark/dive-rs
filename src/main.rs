@@ -24,6 +24,7 @@ fn main() {
     let mut opts = Options::new();
     opts.optopt("n", "name", "Filter by file name", "PATTERN");
     opts.optflag("a", "all", "Show files whose names begin with a dot (.)");
+    opts.optflag("C", "case-sensitive", "Force case-sensitive matching");
     opts.optflag("h", "help", "Print this help menu");
     opts.optflag("V", "version", "Print version info and exit");
 
