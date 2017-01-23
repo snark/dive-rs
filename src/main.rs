@@ -16,10 +16,13 @@ fn print_usage(program: &str, opts: Options) {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let program = Path::new(&args[0])
+
+    let program_name = match Path::new(&args[0])
         .file_name()
-        .and_then(|o| o.to_str())
-        .unwrap();
+        .and_then(|o| o.to_str()) {
+        Some(s) => s,
+        None => "dive",
+    };
 
     let mut opts = Options::new();
     opts.optmulti("m", "match", "Filter by basic substring matching", "STRING");
@@ -34,19 +37,19 @@ fn main() {
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(f) => {
-            println!("{}: {}\n", program, f.to_string());
-            print_usage(&program, opts);
+            println!("{}: {}\n", program_name, f.to_string());
+            print_usage(&program_name, opts);
             process::exit(1);
         }
     };
 
     if matches.opt_present("h") {
-        print_usage(&program, opts);
+        print_usage(&program_name, opts);
         return;
     }
 
     if matches.opt_present("V") {
-        println!("{} version {}", program, VERSION.unwrap_or("unknown"));
+        println!("{} version {}", program_name, VERSION.unwrap_or("unknown"));
         return;
     }
 
