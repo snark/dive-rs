@@ -22,7 +22,10 @@ fn main() {
         .unwrap();
 
     let mut opts = Options::new();
-    opts.optopt("n", "name", "Filter by file name", "PATTERN");
+    opts.optmulti("m", "match", "Filter by basic substring matching", "STRING");
+    opts.optmulti("n", "name", "Filter by file name", "PATTERN");
+    opts.optmulti("p", "path", "Filter by file path", "PATTERN");
+    opts.optmulti("r", "regex", "Filter by regular expression", "REGEX");
     opts.optflag("a", "all", "Show files whose names begin with a dot (.)");
     opts.optflag("C", "case-sensitive", "Force case-sensitive matching");
     opts.optflag("h", "help", "Print this help menu");
@@ -47,7 +50,13 @@ fn main() {
         return;
     }
 
-    let config = dive::Config::new(&matches);
+    let config = match dive::Config::new(&matches) {
+        Ok(c) => c,
+        Err(e) => {
+            println!("Unable to parse all match rules: {}", e);
+            process::exit(1);
+        }
+    };
 
     let start_paths = if !matches.free.is_empty() {
         matches.free.clone()

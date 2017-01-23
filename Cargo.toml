@@ -7,3 +7,4 @@ authors = ["Steve Cook <dive@snarkout.org>"]
 getopts = "*"
 glob = "0.2"
 ignore = "0.1.6"
+regex = "0.2"
