@@ -2,10 +2,10 @@ extern crate dive;
 
 extern crate getopts;
 
+use getopts::Options;
 use std::env;
 use std::path::Path;
 use std::process;
-use getopts::Options;
 
 const VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
 
@@ -53,7 +53,7 @@ fn main() {
         return;
     }
 
-    let config = match dive::Config::new(&matches) {
+    let config = match dive::config::Config::new(&matches) {
         Ok(c) => c,
         Err(e) => {
             println!("Unable to parse all match rules: {}", e);
