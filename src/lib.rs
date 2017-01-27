@@ -9,12 +9,38 @@ extern crate ignore;
 use ignore::{DirEntry, WalkBuilder};
 use ignore::overrides::OverrideBuilder;
 use std::error::Error;
+use std::fs::FileType;
+use std::os::unix::fs::FileTypeExt;
 use std::path::Path;
 
 fn handle_entry(entry: DirEntry, config: &config::Config) {
     // Always match if there are no path-matching rules
     let mut m = config.rules.as_slice().len() == 0;
     let p = entry.path();
+    if config.filetype_filter.is_some() {
+        let filetype_filter = match config.filetype_filter {
+            Some(ref filter) => {
+                match filter {
+                    &config::Filetype::BlockSpecial => FileTypeExt::is_block_device,
+                    &config::Filetype::CharacterSpecial => FileTypeExt::is_char_device,
+                    &config::Filetype::Directory => FileType::is_dir,
+                    &config::Filetype::FIFO => FileTypeExt::is_fifo,
+                    &config::Filetype::RegularFile => FileType::is_file,
+                    &config::Filetype::Socket => FileType::is_socket,
+                    &config::Filetype::SymbolicLink => FileType::is_symlink,
+                }
+            }
+            None => unreachable!(),
+        };
+        match entry.metadata() {
+            Ok(md) => {
+                if !filetype_filter(&md.file_type()) {
+                    return ();
+                }
+            }
+            Err(_) => (),
+        };
+    }
     for rule in config.rules.as_slice() {
         if rule.matches(p, config) {
             m = true;

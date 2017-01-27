@@ -29,6 +29,10 @@ fn main() {
     opts.optmulti("n", "name", "Filter by file name", "PATTERN");
     opts.optmulti("p", "path", "Filter by file path", "PATTERN");
     opts.optmulti("r", "regex", "Filter by regular expression", "REGEX");
+    opts.optopt("t",
+                "type",
+                "Show only files of the specified type",
+                "FILETYPE");
     opts.optflag("a", "all", "Show files whose names begin with a dot (.)");
     opts.optflag("C", "case-sensitive", "Force case-sensitive matching");
     opts.optflag("h", "help", "Print this help menu");
