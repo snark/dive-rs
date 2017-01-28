@@ -14,6 +14,14 @@ fn print_usage(program: &str, opts: Options) {
     print!("{}", opts.usage(&brief));
 }
 
+fn error_out(program: &str, message: &String, show_usage: Option<Options>) {
+    println!("{}: {}", program, message);
+    show_usage.map(|opts| {
+        print!("\n");
+        print_usage(program, opts)
+    });
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -41,8 +49,7 @@ fn main() {
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(f) => {
-            println!("{}: {}\n", program_name, f.to_string());
-            print_usage(&program_name, opts);
+            error_out(program_name, &f.to_string(), Some(opts));
             process::exit(1);
         }
     };
@@ -60,7 +67,7 @@ fn main() {
     let config = match dive::config::Config::new(&matches) {
         Ok(c) => c,
         Err(e) => {
-            println!("Unable to parse all match rules: {}", e);
+            error_out(program_name, &e, None);
             process::exit(1);
         }
     };

@@ -47,7 +47,7 @@ impl Config {
         }
 
         if errors.len() > 0 {
-            return Err(errors.join(","));
+            return Err(format!("Unable to parse matching rules: {}", errors.join(", ")));
         }
 
         let glob_options = MatchOptions {
