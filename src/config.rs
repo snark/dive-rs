@@ -1,8 +1,7 @@
 extern crate getopts;
 
-use glob::{Pattern, MatchOptions};
-use matching::MatchRule;
-use regex::RegexBuilder;
+use glob::MatchOptions;
+use matching::{GlobTarget, MatchRule};
 
 #[derive(Debug)]
 pub enum Filetype {
@@ -25,40 +24,25 @@ pub struct Config {
 
 impl Config {
     pub fn new(matches: &getopts::Matches) -> Result<Config, String> {
+
         let case_sensitive = matches.opt_present("case-sensitive");
         let filetype = try!(Config::flag_to_filetype(matches.opt_str("type")));
         let mut rules = vec![];
         let mut errors = vec![];
 
-        for n in matches.opt_strs("name") {
-            let pattern = Pattern::new(&n);
-            match pattern {
-                Ok(g) => rules.push(MatchRule::NameGlob(g)),
-                _ => errors.push(n),
-            };
-        }
-        for p in matches.opt_strs("path") {
-            let pattern = Pattern::new(&p);
-            match pattern {
-                Ok(g) => rules.push(MatchRule::PathGlob(g)),
-                _ => errors.push(p),
-            };
-        }
-        for m in matches.opt_strs("match") {
-            if case_sensitive {
-                rules.push(MatchRule::Substring(m));
-            } else {
-                rules.push(MatchRule::Substring(m.to_lowercase()));
-            }
-        }
-        for r in matches.opt_strs("regex") {
-            let pattern = RegexBuilder::new(&r)
-                .case_insensitive(!case_sensitive)
-                .unicode(true)
-                .build();
-            match pattern {
-                Ok(re) => rules.push(MatchRule::Regex(re)),
-                _ => errors.push(r),
+        for target in vec!["name", "path", "match", "regex"] {
+            for n in matches.opt_strs(target) {
+                let res = match target {
+                    "name" => MatchRule::new_glob_match(&n, &GlobTarget::Name),
+                    "path" => MatchRule::new_glob_match(&n, &GlobTarget::Path),
+                    "match" => MatchRule::new_substr_match(&n, case_sensitive),
+                    "regex" => MatchRule::new_regex_match(&n, case_sensitive),
+                    _ => unreachable!(),
+                };
+                match res {
+                    Ok(rule) => rules.push(rule),
+                    _ => errors.push(n),
+                };
             }
         }
 
