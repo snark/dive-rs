@@ -2,6 +2,7 @@ extern crate getopts;
 
 use glob::MatchOptions;
 use matching::{GlobTarget, MatchRule};
+use std::num::ParseIntError;
 
 #[derive(Debug)]
 pub enum Filetype {
@@ -16,9 +17,10 @@ pub enum Filetype {
 
 pub struct Config {
     pub all: bool,
+    pub case_sensitive: bool,
     pub filetype_filter: Option<Filetype>,
     pub glob_options: MatchOptions,
-    pub case_sensitive: bool,
+    pub max_depth: Option<usize>,
     pub rules: Vec<MatchRule>,
 }
 
@@ -29,6 +31,7 @@ impl Config {
         let filetype = try!(Config::flag_to_filetype(matches.opt_str("type")));
         let mut rules = vec![];
         let mut errors = vec![];
+        let mut rule_errors = vec![];
 
         for target in vec!["name", "path", "match", "regex"] {
             for n in matches.opt_strs(target) {
@@ -41,13 +44,17 @@ impl Config {
                 };
                 match res {
                     Ok(rule) => rules.push(rule),
-                    _ => errors.push(n),
+                    _ => rule_errors.push(n),
                 };
             }
         }
-
-        if errors.len() > 0 {
-            return Err(format!("Unable to parse matching rules: {}", errors.join(", ")));
+        if rule_errors.len() > 0 {
+            errors = vec![format!("unable to parse matching rules: {}", rule_errors.join(", "))];
+        }
+        let max_depth = Config::flag_to_usize(matches.opt_str("maxdepth"));
+        match max_depth {
+            Err(ref e) => errors.push(format!("unable to parse maxdepth argument: {}", e)),
+            _ => (),
         }
 
         let glob_options = MatchOptions {
@@ -56,13 +63,27 @@ impl Config {
             require_literal_leading_dot: false,
         };
 
+        if errors.len() > 0 {
+            return Err(errors.join("; "));
+        }
+
         Ok(Config {
             all: matches.opt_present("all"),
+            case_sensitive: case_sensitive,
             filetype_filter: filetype,
             glob_options: glob_options,
-            case_sensitive: case_sensitive,
+            // unwrap is safe, because errors have been caught immediately prior
+            // to returning the Config struct.
+            max_depth: max_depth.unwrap(),
             rules: rules,
         })
+    }
+
+    fn flag_to_usize(flag: Option<String>) -> Result<Option<usize>, ParseIntError> {
+        match flag {
+            None => Ok(None),
+            Some(number) => Ok(Some(number.parse::<usize>()?)),
+        }
     }
 
     fn flag_to_filetype(flag: Option<String>) -> Result<Option<Filetype>, String> {

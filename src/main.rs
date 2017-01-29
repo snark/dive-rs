@@ -41,8 +41,12 @@ fn main() {
                 "type",
                 "Show only files of the specified type",
                 "FILETYPE");
-    opts.optflag("a", "all", "Show files whose names begin with a dot (.)");
     opts.optflag("C", "case-sensitive", "Force case-sensitive matching");
+    opts.optflag("a", "all", "Show files whose names begin with a dot (.)");
+    opts.optopt("",
+                "maxdepth",
+                "Descend at most n directories below the starting directories",
+                "n");
     opts.optflag("h", "help", "Print this help menu");
     opts.optflag("V", "version", "Print version info and exit");
 

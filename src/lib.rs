@@ -65,6 +65,7 @@ pub fn run(start_paths: Vec<std::string::String>,
             println!("{}: No such file or directory", path_string);
         } else {
             let mut builder = WalkBuilder::new(path_string);
+            builder.max_depth(config.max_depth);
             if config.all {
                 builder.hidden(false);
             };
