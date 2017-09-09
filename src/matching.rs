@@ -8,10 +8,13 @@ use std::path::Path;
 
 #[derive(Debug)]
 pub enum MatchRule {
+    SmartMatch(Pattern),
     NameGlob(Pattern),
     PathGlob(Pattern),
     Regex(Regex),
+    RegexFullpath(Regex),
     Substring(String),
+    Exact(String),
 }
 
 #[derive(Debug)]
@@ -34,14 +37,27 @@ impl MatchRule {
         }
     }
 
-    pub fn new_regex_match(arg: &String, case_sensitive: bool) -> Result<MatchRule, String> {
+    pub fn new_regex_match(arg: &String, case_sensitive: bool, include_path: bool) -> Result<MatchRule, String> {
         let pattern = RegexBuilder::new(arg)
             .case_insensitive(!case_sensitive)
             .unicode(true)
             .build();
         match pattern {
-            Ok(re) => Ok(MatchRule::Regex(re)),
+            Ok(re) => Ok(
+                if include_path {
+                    MatchRule::RegexFullpath(re)
+                } else {
+                    MatchRule::Regex(re)
+                }),
             Err(_) => Err(format!("Unable to parse regex {}", arg)),
+        }
+    }
+
+    pub fn new_exact_match(arg: &String, case_sensitive: bool) -> Result<MatchRule, String> {
+        if case_sensitive {
+            Ok(MatchRule::Exact(arg.clone()))
+        } else {
+            Ok(MatchRule::Exact(arg.clone().to_lowercase()))
         }
     }
 
@@ -64,35 +80,53 @@ impl MatchRule {
                     Some(f) => p.matches_with(f, &config.glob_options),
                     None => false,
                 }
-            }
+            },
             MatchRule::PathGlob(ref p) => {
-                let file_path = path.parent();
-                match file_path {
-                    Some(f) => p.matches_path_with(f, &config.glob_options),
-                    None => false,
-                }
-            }
-            MatchRule::Regex(ref re) => {
+                p.matches_path_with(path, &config.glob_options)
+            },
+            MatchRule::RegexFullpath(ref re) => {
                 let path_string = path.to_str();
                 match path_string {
                     Some(s) => re.is_match(s),
                     None => false,
                 }
-            }
-            MatchRule::Substring(ref substr) => {
-                let path_string = path.to_str();
-                match path_string {
-                    Some(s) => {
+            },
+            MatchRule::Regex(ref re) => {
+                let file_name = path.file_name().and_then(|f| f.to_str());
+                match file_name {
+                    Some(s) => re.is_match(s),
+                    None => false,
+                }
+            },
+            MatchRule::Exact(ref target) => {
+                let file_name = path.file_name().and_then(|f| f.to_str());
+                match file_name {
+                    Some(f) => {
                         if config.case_sensitive {
-                            s.contains(substr)
+                            f == target
                         } else {
-                            let slc = s.to_lowercase();
-                            slc.contains(substr)
+                            let flc = f.to_lowercase();
+                            &flc == target
                         }
                     }
                     None => false,
                 }
-            }
+            },
+            MatchRule::Substring(ref substr) => {
+                let file_name = path.file_name().and_then(|f| f.to_str());
+                match file_name {
+                    Some(f) => {
+                        if config.case_sensitive {
+                            f.contains(substr)
+                        } else {
+                            let flc = f.to_lowercase();
+                            flc.contains(substr)
+                        }
+                    }
+                    None => false,
+                }
+            },
+            _ => unreachable!()
         }
     }
 }

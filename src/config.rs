@@ -33,13 +33,12 @@ impl Config {
         let mut errors = vec![];
         let mut rule_errors = vec![];
 
-        for target in vec!["name", "path", "match", "regex"] {
+        for target in vec!["exact", "regex", "regex-full"] {
             for n in matches.opt_strs(target) {
                 let res = match target {
-                    "name" => MatchRule::new_glob_match(&n, &GlobTarget::Name),
-                    "path" => MatchRule::new_glob_match(&n, &GlobTarget::Path),
-                    "match" => MatchRule::new_substr_match(&n, case_sensitive),
-                    "regex" => MatchRule::new_regex_match(&n, case_sensitive),
+                    "exact" => MatchRule::new_exact_match(&n, case_sensitive),
+                    "regex" => MatchRule::new_regex_match(&n, case_sensitive, false),
+                    "regex-full" => MatchRule::new_regex_match(&n, case_sensitive, true),
                     _ => unreachable!(),
                 };
                 match res {
@@ -47,6 +46,46 @@ impl Config {
                     _ => rule_errors.push(n),
                 };
             }
+        }
+        for smart_match in matches.free.clone() {
+            let r = if smart_match.contains("/") {
+                // If we contain slashes, we need do a full-path match; further, we need
+                // to wrap the final argument in asterisks if it's not a glob.
+                if Config::contains_glob_characters(&smart_match) {
+                    // We assume the users know what they are doing
+                    MatchRule::new_glob_match(&smart_match, &GlobTarget::Path)
+                } else {
+                    // This is something of an edge case -- given input like
+                    // "foo/bar", what do the users want? It's not clear to me
+                    // at the moment, so we'll (for now) treat it as equivalent
+                    // to "**/foo/*bar*".
+                    let mut elements = smart_match.split('/');
+                    // NB: next_back iterates R-to-L, consuming as it goes, so
+                    // this strips off the final element.
+                    let last = match elements.next_back() {
+                        None => "".to_owned(),
+                        Some("") => "*".to_owned(),
+                        Some(s) => ("*".to_owned() + s) + "*"
+                    };
+                    let mut front = elements.filter(|piece| piece.len() != 0)
+                        .map(|piece| piece.to_owned()).collect::<Vec<_>>();
+                    front.insert(0, "**".to_owned());
+                    front.push(last);
+                    let new_pattern = front.join("/");
+                    MatchRule::new_glob_match(&new_pattern, &GlobTarget::Path)
+                }
+            } else {
+                // Switch to a regex to allow us to escape characters
+                if Config::contains_glob_characters(&smart_match) {
+                    MatchRule::new_glob_match(&smart_match, &GlobTarget::Name)
+                } else {
+                    MatchRule::new_substr_match(&smart_match, case_sensitive)
+                }
+            };
+            match r {
+                Ok(rule) => rules.push(rule),
+                _ => rule_errors.push(smart_match),
+            };
         }
         if rule_errors.len() > 0 {
             errors = vec![format!("unable to parse matching rules: {}", rule_errors.join(", "))];
@@ -59,7 +98,7 @@ impl Config {
 
         let glob_options = MatchOptions {
             case_sensitive: case_sensitive,
-            require_literal_separator: false,
+            require_literal_separator: true,
             require_literal_leading_dot: false,
         };
 
@@ -79,11 +118,19 @@ impl Config {
         })
     }
 
+
     fn flag_to_usize(flag: Option<String>) -> Result<Option<usize>, ParseIntError> {
         match flag {
             None => Ok(None),
             Some(number) => Ok(Some(number.parse::<usize>()?)),
         }
+    }
+
+    fn contains_glob_characters(s: &String) -> bool {
+        s.contains("*") ||
+            s.contains("[") ||
+            s.contains("]") ||
+            s.contains("?") 
     }
 
     fn flag_to_filetype(flag: Option<String>) -> Result<Option<Filetype>, String> {

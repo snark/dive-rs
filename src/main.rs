@@ -10,7 +10,7 @@ use std::process;
 const VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
 
 fn print_usage(program: &str, opts: Options) {
-    let brief = format!("Usage: {} path ... [options]", program);
+    let brief = format!("Usage: {} [options] [filters]", program);
     print!("{}", opts.usage(&brief));
 }
 
@@ -33,16 +33,21 @@ fn main() {
     };
 
     let mut opts = Options::new();
-    opts.optmulti("m", "match", "Filter by basic substring matching", "STRING");
-    opts.optmulti("n", "name", "Filter by file name", "PATTERN");
-    opts.optmulti("p", "path", "Filter by file path", "PATTERN");
-    opts.optmulti("r", "regex", "Filter by regular expression", "REGEX");
+    opts.optmulti("e", "exact", "Filter by exact matching on filename", "STRING");
+    opts.optmulti("r", "regex", "Filter by regular expression, matching the filename", "REGEX");
+    opts.optmulti("",
+                  "regex-full",
+                  "Filter by regular expression, matching the whole path", "REGEX");
+    opts.optflag("C", "case-sensitive", "Force case-sensitive matching");
+    opts.optflag("a", "all", "Show files whose names begin with a dot (.)");
     opts.optopt("t",
                 "type",
                 "Show only files of the specified type",
                 "FILETYPE");
-    opts.optflag("C", "case-sensitive", "Force case-sensitive matching");
-    opts.optflag("a", "all", "Show files whose names begin with a dot (.)");
+    opts.optmulti("f",
+                  "from",
+                  "Descend from a location other than the current directory",
+                  "DIRECTORY");
     opts.optopt("",
                 "maxdepth",
                 "Descend at most n directories below the starting directories",
@@ -76,8 +81,8 @@ fn main() {
         }
     };
 
-    let start_paths = if !matches.free.is_empty() {
-        matches.free.clone()
+    let start_paths = if matches.opt_present("f") {
+        matches.opt_strs("f")
     } else {
         vec![".".to_string()]
     };
