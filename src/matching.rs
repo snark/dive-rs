@@ -37,18 +37,22 @@ impl MatchRule {
         }
     }
 
-    pub fn new_regex_match(arg: &String, case_sensitive: bool, include_path: bool) -> Result<MatchRule, String> {
+    pub fn new_regex_match(arg: &String,
+                           case_sensitive: bool,
+                           include_path: bool)
+                           -> Result<MatchRule, String> {
         let pattern = RegexBuilder::new(arg)
             .case_insensitive(!case_sensitive)
             .unicode(true)
             .build();
         match pattern {
-            Ok(re) => Ok(
-                if include_path {
+            Ok(re) => {
+                Ok(if include_path {
                     MatchRule::RegexFullpath(re)
                 } else {
                     MatchRule::Regex(re)
-                }),
+                })
+            }
             Err(_) => Err(format!("Unable to parse regex {}", arg)),
         }
     }
@@ -80,24 +84,22 @@ impl MatchRule {
                     Some(f) => p.matches_with(f, &config.glob_options),
                     None => false,
                 }
-            },
-            MatchRule::PathGlob(ref p) => {
-                p.matches_path_with(path, &config.glob_options)
-            },
+            }
+            MatchRule::PathGlob(ref p) => p.matches_path_with(path, &config.glob_options),
             MatchRule::RegexFullpath(ref re) => {
                 let path_string = path.to_str();
                 match path_string {
                     Some(s) => re.is_match(s),
                     None => false,
                 }
-            },
+            }
             MatchRule::Regex(ref re) => {
                 let file_name = path.file_name().and_then(|f| f.to_str());
                 match file_name {
                     Some(s) => re.is_match(s),
                     None => false,
                 }
-            },
+            }
             MatchRule::Exact(ref target) => {
                 let file_name = path.file_name().and_then(|f| f.to_str());
                 match file_name {
@@ -111,7 +113,7 @@ impl MatchRule {
                     }
                     None => false,
                 }
-            },
+            }
             MatchRule::Substring(ref substr) => {
                 let file_name = path.file_name().and_then(|f| f.to_str());
                 match file_name {
@@ -125,8 +127,8 @@ impl MatchRule {
                     }
                     None => false,
                 }
-            },
-            _ => unreachable!()
+            }
+            _ => unreachable!(),
         }
     }
 }

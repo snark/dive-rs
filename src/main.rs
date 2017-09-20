@@ -33,11 +33,18 @@ fn main() {
     };
 
     let mut opts = Options::new();
-    opts.optmulti("e", "exact", "Filter by exact matching on filename", "STRING");
-    opts.optmulti("r", "regex", "Filter by regular expression, matching the filename", "REGEX");
+    opts.optmulti("e",
+                  "exact",
+                  "Filter by exact matching on filename",
+                  "STRING");
+    opts.optmulti("r",
+                  "regex",
+                  "Filter by regular expression, matching the filename",
+                  "REGEX");
     opts.optmulti("",
                   "regex-full",
-                  "Filter by regular expression, matching the whole path", "REGEX");
+                  "Filter by regular expression, matching the whole path",
+                  "REGEX");
     opts.optflag("C", "case-sensitive", "Force case-sensitive matching");
     opts.optflag("a", "all", "Show files whose names begin with a dot (.)");
     opts.optopt("t",

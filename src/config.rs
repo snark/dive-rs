@@ -65,10 +65,11 @@ impl Config {
                     let last = match elements.next_back() {
                         None => "".to_owned(),
                         Some("") => "*".to_owned(),
-                        Some(s) => ("*".to_owned() + s) + "*"
+                        Some(s) => ("*".to_owned() + s) + "*",
                     };
                     let mut front = elements.filter(|piece| piece.len() != 0)
-                        .map(|piece| piece.to_owned()).collect::<Vec<_>>();
+                        .map(|piece| piece.to_owned())
+                        .collect::<Vec<_>>();
                     front.insert(0, "**".to_owned());
                     front.push(last);
                     let new_pattern = front.join("/");
@@ -127,10 +128,7 @@ impl Config {
     }
 
     fn contains_glob_characters(s: &String) -> bool {
-        s.contains("*") ||
-            s.contains("[") ||
-            s.contains("]") ||
-            s.contains("?") 
+        s.contains("*") || s.contains("[") || s.contains("]") || s.contains("?")
     }
 
     fn flag_to_filetype(flag: Option<String>) -> Result<Option<Filetype>, String> {
